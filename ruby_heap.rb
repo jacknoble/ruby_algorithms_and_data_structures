@@ -6,14 +6,21 @@ class BinaryHeap
 		@heap_nodes = []
 	end
 
-	def self.heapify(array)
+	def self.build_heap(array)
 		heap = BinaryHeap.new
-		array.each do |element|
-			if element.is_a?(Array)
-				heap.insert(element[0], priority: element[1])
+		array.each_with_index do |el, i|
+			if el.is_a?(Array)
+				node = HeapNode.new(el[0], priority: el[1])
 			else
-				heap.insert(element)
+				node = HeapNode.new(el)
 			end
+			node.index = i
+			heap.heap_nodes << node
+		end
+		p heap
+		(array.length/2).downto(0) do |index|
+			node = heap.heap_nodes[index]
+			heap.heapify_down(node)
 		end
 
 		heap
@@ -39,13 +46,14 @@ class BinaryHeap
 		end
 	end
 
-	def heapify_down
-		node = @heap_nodes.first
+	def heapify_down(node = @heap_nodes.first)
 		while true
 			i = node.index
-			children = @heap_nodes[(i*2) + 1], @heap_nodes[(i*2) + 2]
+			break if (i*2) + 1 >= @heap_nodes.length
+			children = [heap_nodes[(i*2) + 1], heap_nodes[(i*2) + 2]]
+			p node, children
 			if children.any?{|child| !child.nil? && child.priority > node.priority}
-				swap(node.index, children.max{|child| child.priority}.index)
+				swap(node.index, children.max{|c1, c2| c1.priority <=> c2.priority}.index)
 			else
 				break
 			end
@@ -85,7 +93,7 @@ end
 
 class HeapNode
 	attr_accessor :data, :priority, :index
-	def initialize(data, options)
+	def initialize(data, options = {})
 		@data = data
 		@priority = (options[:priority] ? options[:priority] : @data)
 		@index = nil
