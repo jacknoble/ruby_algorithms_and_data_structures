@@ -1,17 +1,23 @@
 class Entry
-	attr_accessor :next, :data
+	attr_accessor :next, :data, :prev
 
 	def initialize(data)
 		@next = nil
-		@back = nil
+		@prev = nil
 		@data = data
+	end
+
+	def link(entry)
+		self.next = entry
+		entry.prev = self
 	end
 end
 
 class LinkedList
-	attr_accessor :name, :head, :last
+	attr_accessor :name, :head, :last, :length
 
 	def initialize()
+		@length = 0
 		@head = nil
 		@last = nil
 	end
@@ -29,38 +35,68 @@ class LinkedList
 		
 		list
 	end
+
 	#put on top of queue
 	def push(entry)
 		if @head
 			entry.next = @head
-			entry.next.back = entry
+			@head.prev = entry
+			self.head = entry
 		else
-			@head = entry
+			@head, @last = entry, entry
 		end
+		length += 1
+		self
 	end
 
 		#remove from top
 	def pop
 		released = @head
 		@head = @head.next
+		length -= 1
 		released
 	end
 
 	#put on bottom of queue
 	def queue(entry)
-		@head = entry unless @head
-		last_entry = self.last
-		last_entry.next = entry
-		entry.back = last_entry
+		if  !@head
+			@head, @last = entry, entry
+		else
+			last_entry = self.last
+			last_entry.next = entry
+			entry.prev = last_entry
+			self.last = entry
+		end
+
+		self.length += 1
+		self
 	end
 
-	def show(entry = @head)
-		print entry.data
-		show(entry.next) if entry.next
+	def to_s
+		string = "{"
+		entry = self.head
+		until entry.nil?
+			string.concat(entry.data.to_s)
+			string.concat('-') if entry.next
+			entry = entry.next
+		end
+
+		string.concat('}')
 	end
 
 	def concat(list)
 		list.push(@last)
+		self.length = self.length + list.length
+		self
+	end
+
+	def dup
+		dup_list = LinkedList.new
+		self.map do |entry|
+			dup_list.queue_data(entry.data)
+		end
+
+		dup_list
 	end
 
 	def map(entry = @head, &prc)
@@ -70,6 +106,44 @@ class LinkedList
 			map(next_entry, &prc)
 		end
 	end
+
+	def [](index)
+		get_entry_at(index).data
+	end
+
+	def []=(index, val)
+		get_entry_at(index).data = val
+		self
+	end
+
+	def delete_at(index)
+		entry = get_entry_at(index)
+		prev_entry, next_entry = entry.prev, entry.next
+		prev_entry.next, next_entry.prev = next_entry, prev_entry
+		entry
+	end
+
+	def insert_at(index, data)
+		new_entry = Entry.new(data)
+		next_entry = get_entry_at(index)
+		previous_entry = next_entry.prev
+		previous_entry.link(new_entry)
+		new_entry.link(next_entry)
+	end
+
+	def get_entry_at(index)
+		if index < 0
+			index = self.length + index
+		end
+		entry = @head
+		until entry.nil?
+			return entry if index == 0
+			entry = entry.next
+			index -= 1
+		end
+	end
+
+
 
 	def queue_data(data)
 		self.queue(Entry.new(data))
