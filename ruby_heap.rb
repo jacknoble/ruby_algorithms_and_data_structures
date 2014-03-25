@@ -1,13 +1,18 @@
+#todo: finish priority_proc implementation
+
 class BinaryHeap
 	attr_accessor :heap_nodes, :priority_proc, :hash
 	def initialize(options={})
-		@priority_proc = options[:priority]
 		@hash = (options[:hash] == true || options[:hash] == nil) ? {} : false
+		@min = options[:min]
 		@heap_nodes = []
+		if block_given?
+			@priority_proc = Proc.new { yield }
+		end
 	end
 
-	def self.build_heap(array)
-		heap = BinaryHeap.new
+	def self.build_heap(array, options = {})
+		heap = BinaryHeap.new(options)
 		array.each_with_index do |el, i|
 			if el.is_a?(Array)
 				node = HeapNode.new(el[0], priority: el[1])
@@ -17,7 +22,6 @@ class BinaryHeap
 			node.index = i
 			heap.heap_nodes << node
 		end
-		p heap
 		(array.length/2).downto(0) do |index|
 			node = heap.heap_nodes[index]
 			heap.heapify_down(node)
@@ -25,6 +29,8 @@ class BinaryHeap
 
 		heap
 	end
+
+	def prioritize()
 
 	def get(datum)
 		hash[datum]
@@ -84,10 +90,21 @@ class BinaryHeap
 	end
 
 	def priority_down(node, priority)
-
+		node = get(node)
+		priority = priority * -1 if min
+		node.priority = priority
+		heapify_down(node)
 	end
 
 	def change_priority(node, priority)
+		node = get(node)
+		old_priority = node.priority
+		node.priority = priority
+		if old_priority > priority
+			heapify_down(node)
+		elsif node.priority < priority
+			heapify_up(node)
+		end
 	end
 end
 
@@ -95,7 +112,8 @@ class HeapNode
 	attr_accessor :data, :priority, :index
 	def initialize(data, options = {})
 		@data = data
-		@priority = (options[:priority] ? options[:priority] : @data)
+		order = (options[:priority] ? options[:priority] : @data)
+		@priority = options[:min] ? order * -1 : order
 		@index = nil
 	end
 end

@@ -18,7 +18,8 @@ class Graph
 	def initialize(options)
 		@head_vertices = Set.new
 		@vertices = {}
-		@type = options[:type]
+		@directed = options[:directed]
+		@weighted = options[:weighted]
 	end
 
 	def get_or_create(vertex_name)
