@@ -44,7 +44,7 @@ class LinkedList
 		else
 			@head, @last = entry, entry
 		end
-		length += 1
+		self.length += 1
 		self
 	end
 
@@ -139,7 +139,14 @@ class LinkedList
 		end
 	end
 
+	def reverse
+		reversed_list = LinkedList.new
+		self.map do |entry|
+			reversed_list.push_data(entry.data)
+		end
 
+		reversed_list
+	end
 
 	def queue_data(data)
 		self.queue(Entry.new(data))
@@ -147,10 +154,6 @@ class LinkedList
 
 	def push_data(data)
 		self.push(Entry.new(data))
-	end
-
-	def reverse!(entry = @head)
-
 	end
 
 end
