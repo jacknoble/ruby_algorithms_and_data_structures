@@ -38,9 +38,8 @@ class LinkedList
 
 	#put on top of queue
 	def push(entry)
-		if @head
-			entry.next = @head
-			@head.prev = entry
+		if self.head
+			entry.link(self.head)
 			self.head = entry
 		else
 			@head, @last = entry, entry
@@ -62,9 +61,7 @@ class LinkedList
 		if  !@head
 			@head, @last = entry, entry
 		else
-			last_entry = self.last
-			last_entry.next = entry
-			entry.prev = last_entry
+			self.last.link(entry)
 			self.last = entry
 		end
 
@@ -85,9 +82,8 @@ class LinkedList
 	end
 
 	def concat(list)
-		list.push(@last)
-		self.length = self.length + list.length
-		self
+		self.last.link(list.head)
+		self.last = list.last
 	end
 
 	def dup
