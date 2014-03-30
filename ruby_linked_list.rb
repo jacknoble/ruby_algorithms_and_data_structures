@@ -11,6 +11,10 @@ class Entry
 		self.next = entry
 		entry.prev = self
 	end
+
+	def to_s
+		"-#{self.data}-"
+	end
 end
 
 class LinkedList
@@ -52,7 +56,7 @@ class LinkedList
 	def pop
 		released = @head
 		@head = @head.next
-		length -= 1
+		@length -= 1
 		released
 	end
 
@@ -67,6 +71,15 @@ class LinkedList
 
 		self.length += 1
 		self
+	end
+
+	#remove from bottom
+	def dequeue
+		released = @last
+		self.last = @last.prev
+		@last.next = nil
+		@length -= 1
+		released
 	end
 
 	def to_s
@@ -88,19 +101,21 @@ class LinkedList
 
 	def dup
 		dup_list = LinkedList.new
-		self.map do |entry|
+		self.each do |entry|
 			dup_list.queue_data(entry.data)
 		end
 
 		dup_list
 	end
 
-	def map(entry = @head, &prc)
+	def each(entry = @head, &prc)
 		next_entry = entry.next
 		prc.call(entry)
 		unless next_entry.nil?
-			map(next_entry, &prc)
+			each(next_entry, &prc)
 		end
+
+		self
 	end
 
 	def [](index)
@@ -141,12 +156,19 @@ class LinkedList
 
 	def reverse
 		reversed_list = LinkedList.new
-		self.map do |entry|
+		self.each do |entry|
 			reversed_list.push_data(entry.data)
 		end
 
 		reversed_list
 	end
+
+	def reverse!
+		reverse_entries(@head)
+		@head, @last = @last, @head
+		self
+	end
+
 
 	def queue_data(data)
 		self.queue(Entry.new(data))
@@ -156,10 +178,11 @@ class LinkedList
 		self.push(Entry.new(data))
 	end
 
+	private
+
+		def reverse_entries(entry)
+			next_entry = entry.next
+			entry.next, entry.prev = entry.prev, entry.next
+			reverse_entries(next_entry) unless next_entry.nil?
+		end
 end
-
-
-
-
-
- # select, reverse
