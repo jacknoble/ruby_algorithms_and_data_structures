@@ -1,85 +1,114 @@
 class Entry
-	attr_accessor :next, :data, :prev
+	attr_accessor :next, :data
 
 	def initialize(data)
 		@next = nil
-		@prev = nil
 		@data = data
-	end
-
-	def link(entry)
-		self.next = entry
-		entry.prev = self
 	end
 
 	def to_s
 		"-#{self.data}-"
 	end
+
+	def link(entry)
+		self.next = entry
+	end
+
 end
 
-class LinkedList
-	attr_accessor :name, :head, :last, :length
+class DoubleEntry < Entry
+	attr_accessor :prev
 
-	def initialize()
-		@length = 0
+	def initialize(data)
+		super
+		@prev = nil
+	end
+
+	def link(entry)
+		super
+		entry.prev = self
+	end
+end 
+
+class SinglyLinkedList
+	attr_accessor :head
+
+	ENTRY_TYPE =  "Entry"
+
+	def initialize
 		@head = nil
-		@last = nil
 	end
 
-	def self.build_from_datum(datum)
-		list = LinkedList.new
-		list.queue(Entry.new(datum))
-	end
+	def has_head?
+		!!@head
+	endexi
 
 	def self.from_array(array)
-		list = LinkedList.new
-		array.each do |el|
-			list.queue_data(el)
+		list = self.new
+		last_index = array.length - 1
+		last_index.downto(0) do |index|
+			list.push_data(array[index])
 		end
-		
+
 		list
 	end
 
-	#put on top of queue
 	def push(entry)
-		if self.head
-			entry.link(self.head)
-			self.head = entry
-		else
-			@head, @last = entry, entry
-		end
-		self.length += 1
-		self
+		entry.link(@head) if self.has_head?
+		self.head = entry
 	end
 
-		#remove from top
 	def pop
 		released = @head
 		@head = @head.next
-		@length -= 1
 		released
 	end
 
-	#put on bottom of queue
-	def queue(entry)
-		if  !@head
-			@head, @last = entry, entry
-		else
-			self.last.link(entry)
-			self.last = entry
+	def get_first_where(&prc)
+		entry = @head
+		target = nil
+		until entry.nil?
+			target = entry if prc.call(entry)
+			entry = entry.next
 		end
 
-		self.length += 1
+		target
+	end
+
+	def last
+		self.get_first_where { |entry| entry.next.nil? }
+	end
+
+	def enqueue(entry)
+		if self.has_head?
+			self.last.link(entry)
+		else
+			self.head = entry
+		end
+
 		self
 	end
 
-	#remove from bottom
 	def dequeue
-		released = @last
-		self.last = @last.prev
-		@last.next = nil
-		@length -= 1
+		second_to_last = self.get_first_where do |entry|
+			entry.next.next.nil?
+		end
+
+		released = second_to_last.next
+		second_to_last.next = nil
 		released
+	end
+
+	def push_data(data)
+		self.push(new_entry(data))
+	end
+
+	def enqueue_data(data)
+		self.enqueue(new_entry(data))
+	end
+
+	def new_entry(data)
+		Object.const_get(ENTRY_TYPE).new(data)
 	end
 
 	def to_s
@@ -94,29 +123,33 @@ class LinkedList
 		string.concat('}')
 	end
 
+	def each(&prc)
+		entry = @head
+		until entry.nil?
+			prc.call(entry)
+			entry = entry.next
+		end
+
+		self
+	end
+
 	def concat(list)
 		self.last.link(list.head)
-		self.last = list.last
 	end
 
 	def dup
-		dup_list = LinkedList.new
+		dup_list = self.class.new
+		dup_list.push_data(self.head.data)
+		most_recent_add = dup_list.head
 		self.each do |entry|
-			dup_list.queue_data(entry.data)
+			next if entry == self.head
+			most_recent_add.link(new_entry(entry.data))
+			most_recent_add = most_recent_add.next
 		end
 
 		dup_list
 	end
 
-	def each(entry = @head, &prc)
-		next_entry = entry.next
-		prc.call(entry)
-		unless next_entry.nil?
-			each(next_entry, &prc)
-		end
-
-		self
-	end
 
 	def [](index)
 		get_entry_at(index).data
@@ -127,25 +160,17 @@ class LinkedList
 		self
 	end
 
+
 	def delete_at(index)
-		entry = get_entry_at(index)
-		prev_entry, next_entry = entry.prev, entry.next
-		prev_entry.next, next_entry.prev = next_entry, prev_entry
+		prev_entry = get_entry_at(index - 1)
+		entry = prev_entry.next
+		next_entry = entry.next
+		prev_entry.link(next_entry)
 		entry
 	end
 
-	def insert_at(index, data)
-		new_entry = Entry.new(data)
-		next_entry = get_entry_at(index)
-		previous_entry = next_entry.prev
-		previous_entry.link(new_entry)
-		new_entry.link(next_entry)
-	end
 
 	def get_entry_at(index)
-		if index < 0
-			index = self.length + index
-		end
 		entry = @head
 		until entry.nil?
 			return entry if index == 0
@@ -154,8 +179,17 @@ class LinkedList
 		end
 	end
 
+	def insert_at(index, data)
+		new_node = new_entry(data)
+		previous_entry = get_entry_at(index - 1)
+		next_entry = previous_entry.next
+		previous_entry.link(new_node)
+		new_node.link(next_entry)
+		self
+	end
+
 	def reverse
-		reversed_list = LinkedList.new
+		reversed_list = self.class.new
 		self.each do |entry|
 			reversed_list.push_data(entry.data)
 		end
@@ -164,18 +198,47 @@ class LinkedList
 	end
 
 	def reverse!
-		reverse_entries(@head)
-		@head, @last = @last, @head
+		first_entry = @head
+		second_entry = @head.next
+		@head.next =  nil
+		until second_entry.nil?
+			third_entry = second_entry.next
+			second_entry.next = first_entry
+			first_entry = second_entry
+			@head = first_entry if third_entry.nil?
+			second_entry = third_entry
+		end
+
 		self
 	end
 
+end
 
-	def queue_data(data)
-		self.queue(Entry.new(data))
+class DoublyLinkedList < SinglyLinkedList
+	attr_accessor :name, :last, :length
+
+	ENTRY_TYPE =  "DoubleEntry"
+
+	def initialize
+		super
+		@last = nil
 	end
 
-	def push_data(data)
-		self.push(Entry.new(data))
+	def push(entry)
+		super
+		self.last = entry if @last.nil?
+	end
+
+	def enqueue(entry)
+		super
+		self.last = entry if @last.nil?
+	end
+
+
+	def reverse!
+		reverse_entries(@head)
+		@head, @last = @last, @head
+		self
 	end
 
 	private
